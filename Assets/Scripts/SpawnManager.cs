@@ -16,12 +16,18 @@ public class SpawnManager : MonoBehaviour
 
     private GameManager gameManager;
     private PlayerController player;
+    
+    //Sound Variables
+    private AudioSource gameAudio;
+    public AudioClip alarmSound;
 
     // Start is called before the first frame update
     void Start()
     {
         gameManager = GameObject.Find("Game Manager").GetComponent<GameManager>();
         player = GameObject.Find("Player").GetComponent<PlayerController>();
+
+        gameAudio = GameObject.Find("Spawn Manager").GetComponent<AudioSource>();
 
         spawnTarget();
         StartCoroutine(startStealthTime());
@@ -44,6 +50,8 @@ public class SpawnManager : MonoBehaviour
     IEnumerator startStealthTime()
     {
         Debug.Log("Stealth Time is about to start!");
+        gameAudio.PlayOneShot(alarmSound);
+        gameManager.MICText.text = "Stealth Time Incoming!";
         for (int i = 0; i < numStealthZones; i++)
         {
             stealthZones[Random.Range(0, stealthZones.Length)].SetActive(true);
@@ -56,6 +64,7 @@ public class SpawnManager : MonoBehaviour
     IEnumerator stealthTime()
     {
         Debug.Log("Stealth Time Start!");
+        gameManager.MICText.text = "You better be hidden!";
         gameManager.isStealthTime = true;
         yield return new WaitForSeconds(stealthTimeDuration);
         StartCoroutine(stealthTimeEnd());
@@ -65,6 +74,7 @@ public class SpawnManager : MonoBehaviour
     IEnumerator stealthTimeEnd()
     {
         Debug.Log("Stealth Time End!");
+        gameManager.MICText.text = "Get To Shooting!";
         gameManager.isStealthTime = false;
         player.isHiding = false;
         for (int i = 0; i < stealthZones.Length; i++)

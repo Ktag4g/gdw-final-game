@@ -4,9 +4,15 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
+    //Sprite Variables
     private GameManager gameManager;
     private SpriteRenderer sprite;
     private Animator spriteAnim;
+
+    //Sound Variables
+    private AudioSource playerAudio;
+    public AudioClip jumpSound;
+    public AudioClip shootSound;
 
     //Movement Variables
     private float horizontalInput;
@@ -19,6 +25,7 @@ public class PlayerController : MonoBehaviour
     public int airDrag = 0;
 
     //Jump Variables
+    private bool jumped;
     public float jumpForce = 1200;
     private Rigidbody rb;
     public bool isOnGround;
@@ -38,6 +45,8 @@ public class PlayerController : MonoBehaviour
         gameManager = GameObject.Find("Game Manager").GetComponent<GameManager>();
         sprite = GameObject.Find("Chara_Sprite").GetComponent<SpriteRenderer>();
         spriteAnim = GameObject.Find("Chara_Sprite").GetComponent<Animator>();
+
+        playerAudio = GameObject.Find("Player").GetComponent<AudioSource>();
 
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
@@ -63,23 +72,17 @@ public class PlayerController : MonoBehaviour
         {
             //Makes aim marker invisible
             aimRotator.SetActive(false);
+            
+            //Sends input to the animator to start/stop run animation
+            spriteAnim.SetFloat("horizontalInput", Mathf.Abs(horizontalInput));
 
-            //Left and right movement
-            horizontalInput = Input.GetAxis("Horizontal");
-            rb.AddForce(Vector3.right * horizontalInput * speed, ForceMode.Impulse);
-
-            if(horizontalInput == 0)
-            {
-                //spriteAnim.gameObject.SetActive(false);
-            }
+            //Sets sprite to change depending on what direction player is running in
             if(horizontalInput < 0)
             {
-                //spriteAnim.gameObject.SetActive(true);
                 sprite.flipX = true;
             }
             if(horizontalInput > 0)
             {
-                //spriteAnim.gameObject.SetActive(true);
                 sprite.flipX = false;
             }
 
@@ -89,17 +92,8 @@ public class PlayerController : MonoBehaviour
                 Input.GetKeyDown(KeyCode.UpArrow)) &&
                 (isOnGround || isOnWall))
             {
-                rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-            }
-
-            //Crouch button
-            if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S))
-            {
-                speed = crouchSpeed;
-            }
-            else if (Input.GetKeyUp(KeyCode.DownArrow) || Input.GetKeyUp(KeyCode.S))
-            {
-                speed = normSpeed;
+                playerAudio.PlayOneShot(jumpSound);
+                jumped = true;
             }
         }
         
@@ -112,6 +106,7 @@ public class PlayerController : MonoBehaviour
             //Right mouse button shoots projectile
             if (Input.GetMouseButtonDown(1))
             {
+                playerAudio.PlayOneShot(shootSound);
                 Instantiate(projectile, aimRotator.transform.position, aimRotator.transform.rotation);
             }
         }
@@ -133,16 +128,36 @@ public class PlayerController : MonoBehaviour
         {
             if (isHiding)
             {
-                //Add to a score probably?
+                //Add to a score? Implement later as different game mode
             }
             else if(!isHiding)
             {
                 Destroy(gameObject);
-                gameManager.GameOver = true;
+                gameManager.isGameOver = true;
             }
         }
     }
 
+    private void FixedUpdate()
+    {
+        //Jumps
+        if (jumped)
+        {
+            jumped = false;
+            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+        }
+        
+        //Left and right movement
+        horizontalInput = Input.GetAxis("Horizontal");
+        if(isOnGround)
+        {
+            rb.AddForce(Vector3.right * horizontalInput * speed, ForceMode.Impulse);
+        }
+        else
+        {
+            rb.AddForce(Vector3.right * horizontalInput * speed, ForceMode.Force);
+        }
+    }
     private void OnTriggerEnter(Collider other)
     {
         //Location marker (marks when the player is touching the wall or floor)
